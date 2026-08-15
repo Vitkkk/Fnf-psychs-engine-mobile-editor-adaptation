@@ -11,7 +11,7 @@ jobs:
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       ANDROID_SETUP: 'true'
-      BUILD_TRIGGER: '5'
+      BUILD_TRIGGER: '6'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,14 +42,17 @@ jobs:
           haxelib setup "$HOME/haxelib"
           haxelib install lime --quiet
           haxelib install openfl --quiet
-          haxelib install flixel --quiet
-          haxelib install flixel-addons --quiet
-          haxelib install flixel-ui --quiet
+          haxelib install flixel 4.11.0 --quiet
+          haxelib install flixel-addons 2.11.0 --quiet
+          haxelib install flixel-ui 2.4.0 --quiet
           haxelib install hscript --quiet
           haxelib install actuate --quiet
           haxelib install extension-webview --quiet
           haxelib install linc_luajit --quiet
           haxelib install hxvm-luajit --quiet
+          haxelib set flixel 4.11.0
+          haxelib set flixel-addons 2.11.0
+          haxelib set flixel-ui 2.4.0
       - name: Configure Lime Android paths
         run: |
           haxelib run lime config ANDROID_SDK "$ANDROID_SDK_ROOT"
