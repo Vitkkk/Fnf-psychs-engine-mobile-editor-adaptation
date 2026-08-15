@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-      BUILD_TRIGGER: '4'
+      ANDROID_SETUP: 'true'
+      BUILD_TRIGGER: '5'
     steps:
       - uses: actions/checkout@v4
         with:
