@@ -1504,7 +1504,7 @@ class ChartingState extends MusicBeatState
 					curSelectedNote = eventNote;
 				}
 				updateGrid();
-			});
+			}));
 	}
 	#end
 
