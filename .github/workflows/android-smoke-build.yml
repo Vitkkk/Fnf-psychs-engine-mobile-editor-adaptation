@@ -12,11 +12,11 @@ jobs:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       ANDROID_SETUP: 'true'
       HXCPP_COMPILE_THREADS: '4'
-      BUILD_TRIGGER: '11'
+      BUILD_TRIGGER: '12'
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: agent/mobile-editor-milestone-1
+          ref: 67cf7edc61110518ce44a862d4bd51a62cac7cfb
       - uses: krdlab/setup-haxe@v1
         with:
           haxe-version: '4.2.5'
