@@ -97,24 +97,27 @@ class Character extends FlxSprite
 
 			default:
 				var characterPath:String = 'characters/' + curCharacter + '.json';
-				#if desktop
+				#if android
 				var path:String = Paths.modFolders(characterPath);
-				if (!FileSystem.exists(path)) {
-					path = Paths.getPreloadPath(characterPath);
-				}
-
-				if (!FileSystem.exists(path))
-				#else
-				var path:String = Paths.getPreloadPath(characterPath);
-				if (!Assets.exists(path))
-				#end
+				var rawJson:String = null;
+				if (FileSystem.exists(path))
 				{
-					path = Paths.getPreloadPath('characters/' + DEFAULT_CHARACTER + '.json'); //If a character couldn't be found, change him to BF just to prevent a crash
+					rawJson = File.getContent(path);
 				}
-
-				#if desktop
+				else
+				{
+					path = Paths.getPreloadPath(characterPath);
+					if (!Assets.exists(path)) path = Paths.getPreloadPath('characters/' + DEFAULT_CHARACTER + '.json');
+					rawJson = Assets.getText(path);
+				}
+				#elseif desktop
+				var path:String = Paths.modFolders(characterPath);
+				if (!FileSystem.exists(path)) path = Paths.getPreloadPath(characterPath);
+				if (!FileSystem.exists(path)) path = Paths.getPreloadPath('characters/' + DEFAULT_CHARACTER + '.json');
 				var rawJson = File.getContent(path);
 				#else
+				var path:String = Paths.getPreloadPath(characterPath);
+				if (!Assets.exists(path)) path = Paths.getPreloadPath('characters/' + DEFAULT_CHARACTER + '.json');
 				var rawJson = Assets.getText(path);
 				#end
 
