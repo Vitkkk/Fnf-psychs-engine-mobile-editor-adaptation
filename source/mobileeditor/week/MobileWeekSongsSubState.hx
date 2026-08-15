@@ -16,7 +16,7 @@ import WeekData.WeekFile;
  */
 class MobileWeekSongsSubState extends MusicBeatSubstate
 {
-    static inline var PAGE_SIZE:Int = 4;
+    static inline var ITEMS_PER_PAGE:Int = 4;
 
     var week:WeekFile;
     var onChanged:Void->Void;
@@ -61,7 +61,7 @@ class MobileWeekSongsSubState extends MusicBeatSubstate
             if (page > 0) { page--; rebuild(); }
         }));
         add(new MobileButton(FlxG.width - 158, FlxG.height - 72, 130, 48, 'PAG >', function() {
-            if ((page + 1) * PAGE_SIZE < week.songs.length) { page++; rebuild(); }
+            if ((page + 1) * ITEMS_PER_PAGE < week.songs.length) { page++; rebuild(); }
         }));
 
         rebuild();
@@ -71,11 +71,10 @@ class MobileWeekSongsSubState extends MusicBeatSubstate
     {
         var name = StringTools.trim(addInput.text);
         if (name.length == 0) return;
-        // Keep the same four-field shape used by this fork's WeekData defaults.
         week.songs.push([name, 'dad', [146, 113, 253], name]);
         addInput.text = '';
         FlxG.stage.window.textInputEnabled = false;
-        page = Std.int((week.songs.length - 1) / PAGE_SIZE);
+        page = Std.int((week.songs.length - 1) / ITEMS_PER_PAGE);
         onChanged();
         rebuild();
     }
@@ -85,10 +84,10 @@ class MobileWeekSongsSubState extends MusicBeatSubstate
         for (item in rows) { remove(item, true); item.destroy(); }
         rows = [];
 
-        var maxPage = week.songs.length == 0 ? 0 : Std.int((week.songs.length - 1) / PAGE_SIZE);
+        var maxPage = week.songs.length == 0 ? 0 : Std.int((week.songs.length - 1) / ITEMS_PER_PAGE);
         if (page > maxPage) page = maxPage;
-        var start = page * PAGE_SIZE;
-        var end = Std.int(Math.min(start + PAGE_SIZE, week.songs.length));
+        var start = page * ITEMS_PER_PAGE;
+        var end = Std.int(Math.min(start + ITEMS_PER_PAGE, week.songs.length));
         var y:Float = 128;
 
         for (i in start...end)
@@ -126,7 +125,7 @@ class MobileWeekSongsSubState extends MusicBeatSubstate
             rows.push(empty); add(empty);
         }
 
-        pageText.text = 'Pagina ' + (page + 1) + ' / ' + Math.max(1, Math.ceil(week.songs.length / PAGE_SIZE))
+        pageText.text = 'Pagina ' + (page + 1) + ' / ' + Math.max(1, Math.ceil(week.songs.length / ITEMS_PER_PAGE))
             + '   |   ' + week.songs.length + ' musicas';
     }
 
