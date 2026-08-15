@@ -120,11 +120,84 @@ class MobileAssetDiscovery
         dirs.push(Paths.getPreloadPath('weeks/'));
         for (dir in dirs)
         {
-            if (!FileSystem.exists(dir)) continue;
+            if (!FileSystem.exists(dir) || !FileSystem.isDirectory(dir)) continue;
             for (file in FileSystem.readDirectory(dir))
                 if (file.toLowerCase().endsWith('.json')) addUnique(result, seen, file.substr(0, file.length - 5));
         }
         #end
+        result.sort(function(a, b) return Reflect.compare(a.toLowerCase(), b.toLowerCase()));
+        return result;
+    }
+
+    /** Finds playable song IDs from chart-data folders instead of requiring typing. */
+    public static function listSongs():Array<String>
+    {
+        var result:Array<String> = [];
+        var seen:Map<String, Bool> = new Map();
+        #if sys
+        var dirs:Array<String> = [];
+        var project = MobileProjectContext.projectRoot();
+        if (project.length > 0) dirs.push(project + 'data/');
+        #if MODS_ALLOWED
+        dirs.push(Paths.mods('data/'));
+        #end
+        dirs.push(Paths.getPreloadPath('data/'));
+
+        for (dir in dirs)
+        {
+            if (!FileSystem.exists(dir) || !FileSystem.isDirectory(dir)) continue;
+            for (entry in FileSystem.readDirectory(dir))
+            {
+                var full = dir + entry;
+                if (!FileSystem.isDirectory(full)) continue;
+                // A chart folder is enough to expose the song. Prefer the folder ID,
+                // which is exactly what Psych's Paths.formatToSongPath resolves to.
+                addUnique(result, seen, entry);
+            }
+        }
+        #end
+        result.sort(function(a, b) return Reflect.compare(a.toLowerCase(), b.toLowerCase()));
+        return result;
+    }
+
+    /** Finds HealthIcon IDs in both new (icons/foo.png) and old (icon-foo.png) naming. */
+    public static function listIcons():Array<String>
+    {
+        var result:Array<String> = [];
+        var seen:Map<String, Bool> = new Map();
+        addUnique(result, seen, 'face');
+        addUnique(result, seen, 'bf');
+
+        #if sys
+        var dirs:Array<String> = [];
+        var project = MobileProjectContext.projectRoot();
+        if (project.length > 0) dirs.push(project + 'images/icons/');
+        #if MODS_ALLOWED
+        dirs.push(Paths.mods('images/icons/'));
+        #end
+        dirs.push(Paths.getPreloadPath('images/icons/'));
+
+        for (dir in dirs)
+        {
+            if (!FileSystem.exists(dir) || !FileSystem.isDirectory(dir)) continue;
+            for (file in FileSystem.readDirectory(dir))
+            {
+                var lower = file.toLowerCase();
+                if (!lower.endsWith('.png')) continue;
+                var id = file.substr(0, file.length - 4);
+                if (id.startsWith('icon-')) id = id.substr(5);
+                addUnique(result, seen, id);
+            }
+        }
+        #end
+
+        // Character healthicon metadata is also a useful source if icon files are packed.
+        for (character in listCharacters())
+        {
+            var icon = getCharacterInfo(character).healthIcon;
+            if (icon != null && icon.length > 0) addUnique(result, seen, icon);
+        }
+
         result.sort(function(a, b) return Reflect.compare(a.toLowerCase(), b.toLowerCase()));
         return result;
     }
@@ -139,7 +212,7 @@ class MobileAssetDiscovery
         if (project.length > 0) dirs.unshift(project + 'fonts/');
         for (dir in dirs)
         {
-            if (!FileSystem.exists(dir)) continue;
+            if (!FileSystem.exists(dir) || !FileSystem.isDirectory(dir)) continue;
             for (file in FileSystem.readDirectory(dir))
             {
                 var lower = file.toLowerCase();
