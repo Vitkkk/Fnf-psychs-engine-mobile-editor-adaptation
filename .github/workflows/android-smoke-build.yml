@@ -17,7 +17,7 @@ jobs:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       ANDROID_SETUP: 'true'
       HXCPP_COMPILE_THREADS: '4'
-      BUILD_TRIGGER: '13'
+      BUILD_TRIGGER: '14'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,17 +27,26 @@ jobs:
         with:
           haxe-version: '4.2.5'
 
-      - name: Restore Haxe and native caches
+      - name: Restore Haxe libraries
         uses: actions/cache@v4
         with:
           path: |
             ~/haxelib
             ~/.lime
+          key: psych-haxelib-v2-${{ runner.os }}-haxe425-flixel411-${{ hashFiles('Project.xml') }}
+          restore-keys: |
+            psych-haxelib-v2-${{ runner.os }}-haxe425-flixel411-
+
+      - name: Restore partial native build
+        id: native-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
             export/debug/android/obj
             export/debug/android/haxe
-          key: psych-mobile-android-v2-${{ runner.os }}-haxe425-flixel411-arm64-${{ hashFiles('Project.xml') }}
+          key: psych-native-arm64-${{ runner.os }}-${{ github.run_number }}
           restore-keys: |
-            psych-mobile-android-v2-${{ runner.os }}-haxe425-flixel411-arm64-
+            psych-native-arm64-${{ runner.os }}-
 
       - name: Use JDK 17 for Android SDK manager
         uses: actions/setup-java@v4
@@ -90,7 +99,23 @@ jobs:
           haxelib run lime config JAVA_HOME "$JAVA_HOME"
 
       - name: Build debug APK ARM64
+        id: apk-build
+        timeout-minutes: 20
+        continue-on-error: true
         run: haxelib run lime build android -debug -arm64
+
+      - name: Save partial native build
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            export/debug/android/obj
+            export/debug/android/haxe
+          key: psych-native-arm64-${{ runner.os }}-${{ github.run_number }}
+
+      - name: Require successful APK build
+        if: steps.apk-build.outcome != 'success'
+        run: exit 1
 
       - name: Locate APK
         run: find export -type f -name '*.apk' -print
