@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    env:
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,8 +24,11 @@ jobs:
           java-version: '17'
       - name: Install Android SDK pieces and NDK r21e
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager 'platform-tools' 'platforms;android-31' 'build-tools;31.0.0' 'ndk;21.4.7075529'
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/9.0/bin/sdkmanager"; fi
+          "$SDKMANAGER" --version
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platform-tools' 'platforms;android-31' 'build-tools;31.0.0' 'ndk;21.4.7075529'
       - name: Switch to JDK 11 for the legacy Lime Android build
         uses: actions/setup-java@v4
         with:
