@@ -1,13 +1,12 @@
 package mobileeditor.week;
 
 import flixel.FlxG;
-import flixel.FlxBasic;
 import flixel.FlxSprite;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.addons.ui.FlxUIInputText;
-import openfl.utils.Assets;
+import mobileeditor.MobileAssetDiscovery;
 import mobileeditor.MobileEditorSavePaths;
 import mobileeditor.MobileProjectContext;
 import mobileeditor.MobileSafeWriter;
@@ -50,7 +49,6 @@ class MobileWeekEditorState extends MusicBeatState
 
         add(new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK));
 
-        // Story Mode-style live preview area.
         bgYellow = new FlxSprite(0, 46).makeGraphic(FlxG.width, 330, 0xFFF9CF51);
         add(bgYellow);
 
@@ -110,7 +108,8 @@ class MobileWeekEditorState extends MusicBeatState
     {
         if (week.songs == null) week.songs = [];
         if (week.weekCharacters == null) week.weekCharacters = ['dad', 'bf', 'gf'];
-        while (week.weekCharacters.length < 3) week.weekCharacters.push(week.weekCharacters.length == 0 ? 'dad' : (week.weekCharacters.length == 1 ? 'bf' : 'gf'));
+        while (week.weekCharacters.length < 3)
+            week.weekCharacters.push(week.weekCharacters.length == 0 ? 'dad' : (week.weekCharacters.length == 1 ? 'bf' : 'gf'));
         if (week.weekBackground == null || week.weekBackground.length == 0) week.weekBackground = 'stage';
         if (week.storyName == null || week.storyName.length == 0) week.storyName = week.weekName;
         if (week.weekName == null || week.weekName.length == 0) week.weekName = week.storyName;
@@ -122,7 +121,6 @@ class MobileWeekEditorState extends MusicBeatState
     {
         reloadBackground();
         rebuildCharacters();
-
         titlePreview.text = week.storyName == null || week.storyName.length == 0 ? MobileAssetDiscovery.prettify(weekId).toUpperCase() : week.storyName;
 
         var lines:Array<String> = [];
