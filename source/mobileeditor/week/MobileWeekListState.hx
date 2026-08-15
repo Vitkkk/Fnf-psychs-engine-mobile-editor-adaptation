@@ -103,8 +103,12 @@ class MobileWeekListState extends MusicBeatState
         for (i in start...end)
         {
             var id = weekIds[i];
+            var week = loadWeek(id);
             var label = MobileAssetDiscovery.prettify(id);
-            var button = bigButton(70, y, FlxG.width - 140, 66, label + '   [' + id + ']', function() {
+            var songCount = week != null && week.songs != null ? week.songs.length : 0;
+            var songWord = songCount == 1 ? 'musica' : 'musicas';
+            var button = bigButton(70, y, FlxG.width - 140, 66,
+                label + '   |   ' + songCount + ' ' + songWord + '   [' + id + ']', function() {
                 openWeek(id);
             });
             buttons.push(button);
