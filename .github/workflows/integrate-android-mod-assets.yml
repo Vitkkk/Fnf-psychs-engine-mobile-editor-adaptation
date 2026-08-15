@@ -1,0 +1,53 @@
+name: Integrate Android mod assets
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/integrate-android-mod-assets.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mobile-editor-milestone-1
+          fetch-depth: 0
+      - name: Patch character and chart asset discovery
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          chart = Path('source/editors/ChartingState.hx')
+          s = chart.read_text()
+          old = '''\t\t#if !android\n\t\tvar directories:Array<String> = [Paths.mods('characters/'), Paths.mods(Paths.currentModDirectory + '/characters/'), Paths.getPreloadPath('characters/')];\n\t\t#else\n\t\tvar directories:Array<String> = [Paths.getPreloadPath('characters/')];\n\t\t#end\n'''
+          new = '''\t\t#if MODS_ALLOWED\n\t\tvar directories:Array<String> = [Paths.mods('characters/'), Paths.mods((Paths.currentModDirectory == null ? '' : Paths.currentModDirectory + '/') + 'characters/'), Paths.getPreloadPath('characters/')];\n\t\t#else\n\t\tvar directories:Array<String> = [Paths.getPreloadPath('characters/')];\n\t\t#end\n'''
+          if old not in s:
+              raise SystemExit('character directories block not found')
+          s = s.replace(old, new, 1)
+          old_stage = '''\t\t#if !android\n\t\tvar directories:Array<String> = [Paths.mods('stages/'), Paths.mods(Paths.currentModDirectory + '/stages/'), Paths.getPreloadPath('stages/')];\n\t\t#else\n\t\tvar directories:Array<String> = [Paths.getPreloadPath('stages/')];\n\t\t#end\n'''
+          new_stage = '''\t\t#if MODS_ALLOWED\n\t\tvar directories:Array<String> = [Paths.mods('stages/'), Paths.mods((Paths.currentModDirectory == null ? '' : Paths.currentModDirectory + '/') + 'stages/'), Paths.getPreloadPath('stages/')];\n\t\t#else\n\t\tvar directories:Array<String> = [Paths.getPreloadPath('stages/')];\n\t\t#end\n'''
+          if old_stage not in s:
+              raise SystemExit('stage directories block not found')
+          s = s.replace(old_stage, new_stage, 1)
+          chart.write_text(s)
+
+          char = Path('source/Character.hx')
+          s = char.read_text()
+          old = '''\t\t\t\t#if desktop\n\t\t\t\tvar path:String = Paths.modFolders(characterPath);\n\t\t\t\tif (!FileSystem.exists(path)) {\n\t\t\t\t\tpath = Paths.getPreloadPath(characterPath);\n\t\t\t\t}\n\n\t\t\t\tif (!FileSystem.exists(path))\n\t\t\t\t#else\n\t\t\t\tvar path:String = Paths.getPreloadPath(characterPath);\n\t\t\t\tif (!Assets.exists(path))\n\t\t\t\t#end\n\t\t\t\t{\n\t\t\t\t\tpath = Paths.getPreloadPath('characters/' + DEFAULT_CHARACTER + '.json'); //If a character couldn't be found, change him to BF just to prevent a crash\n\t\t\t\t}\n\n\t\t\t\t#if desktop\n\t\t\t\tvar rawJson = File.getContent(path);\n\t\t\t\t#else\n\t\t\t\tvar rawJson = Assets.getText(path);\n\t\t\t\t#end\n'''
+          new = '''\t\t\t\t#if android\n\t\t\t\tvar path:String = Paths.modFolders(characterPath);\n\t\t\t\tvar rawJson:String = null;\n\t\t\t\tif (FileSystem.exists(path))\n\t\t\t\t{\n\t\t\t\t\trawJson = File.getContent(path);\n\t\t\t\t}\n\t\t\t\telse\n\t\t\t\t{\n\t\t\t\t\tpath = Paths.getPreloadPath(characterPath);\n\t\t\t\t\tif (!Assets.exists(path)) path = Paths.getPreloadPath('characters/' + DEFAULT_CHARACTER + '.json');\n\t\t\t\t\trawJson = Assets.getText(path);\n\t\t\t\t}\n\t\t\t\t#elseif desktop\n\t\t\t\tvar path:String = Paths.modFolders(characterPath);\n\t\t\t\tif (!FileSystem.exists(path)) path = Paths.getPreloadPath(characterPath);\n\t\t\t\tif (!FileSystem.exists(path)) path = Paths.getPreloadPath('characters/' + DEFAULT_CHARACTER + '.json');\n\t\t\t\tvar rawJson = File.getContent(path);\n\t\t\t\t#else\n\t\t\t\tvar path:String = Paths.getPreloadPath(characterPath);\n\t\t\t\tif (!Assets.exists(path)) path = Paths.getPreloadPath('characters/' + DEFAULT_CHARACTER + '.json');\n\t\t\t\tvar rawJson = Assets.getText(path);\n\t\t\t\t#end\n'''
+          if old not in s:
+              raise SystemExit('Character JSON loader block not found')
+          s = s.replace(old, new, 1)
+          char.write_text(s)
+          PY
+      - name: Commit integration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add source/Character.hx source/editors/ChartingState.hx
+          git commit -m 'Load mod characters and stages on Android editors'
+          git push origin HEAD:agent/mobile-editor-milestone-1
