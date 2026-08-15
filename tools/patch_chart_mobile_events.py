@@ -46,7 +46,7 @@ method = '''
 \t\t\t\t\tcurSelectedNote = eventNote;
 \t\t\t\t}
 \t\t\t\tupdateGrid();
-\t\t\t});
+\t\t\t}));
 \t}
 \t#end
 '''
@@ -54,5 +54,11 @@ if 'function openMobileEventEditor():Void' not in s:
     if method_anchor not in s:
         raise SystemExit('method anchor missing')
     s = s.replace(method_anchor, method + method_anchor, 1)
+
+# Repair the first integration revision, which closed only the constructor call.
+broken = "\t\t\t\tupdateGrid();\n\t\t\t});\n\t}\n\t#end\n\n\tfunction updateZoom() {"
+fixed = "\t\t\t\tupdateGrid();\n\t\t\t}));\n\t}\n\t#end\n\n\tfunction updateZoom() {"
+if broken in s:
+    s = s.replace(broken, fixed, 1)
 
 p.write_text(s)
