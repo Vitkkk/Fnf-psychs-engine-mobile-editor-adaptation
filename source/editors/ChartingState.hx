@@ -51,6 +51,10 @@ import flash.media.Sound;
 import ui.FlxVirtualPad;
 import mobileeditor.MobileSafeWriter;
 import mobileeditor.MobileEditorSavePaths;
+#if android
+import mobileeditor.events.MobileEventEditorSubState;
+import mobileeditor.ui.MobileButton;
+#end
 
 using StringTools;
 
@@ -348,6 +352,12 @@ class ChartingState extends MusicBeatState
 		_pad = new FlxVirtualPad(FULL, A);
     	_pad.alpha = 0.75;
     	this.add(_pad);
+
+		#if android
+		var mobileEventButton = new MobileButton(FlxG.width - 310, FlxG.height - 72, 280, 52, '+ EVENTO', openMobileEventEditor);
+		mobileEventButton.scrollFactor.set();
+		add(mobileEventButton);
+		#end
 
 		super.create();
 	}
@@ -1467,6 +1477,36 @@ class ChartingState extends MusicBeatState
 		lastConductorPos = Conductor.songPosition;
 		super.update(elapsed);
 	}
+
+
+	#if android
+	function openMobileEventEditor():Void
+	{
+		var editingEvent:Bool = curSelectedNote != null && curSelectedNote[1] < 0;
+		var name:String = editingEvent ? Std.string(curSelectedNote[2]) : 'Change Character';
+		var value1:String = editingEvent && curSelectedNote.length > 3 ? Std.string(curSelectedNote[3]) : '';
+		var value2:String = editingEvent && curSelectedNote.length > 4 ? Std.string(curSelectedNote[4]) : '';
+
+		openSubState(new MobileEventEditorSubState(name, value1, value2,
+			_song.player1, _song.player2, _song.player3,
+			function(newName:String, newValue1:String, newValue2:String)
+			{
+				if (editingEvent)
+				{
+					curSelectedNote[2] = newName;
+					curSelectedNote[3] = newValue1;
+					curSelectedNote[4] = newValue2;
+				}
+				else
+				{
+					var eventNote:Array<Dynamic> = [Conductor.songPosition, -1, newName, newValue1, newValue2];
+					_song.notes[curSection].sectionNotes.push(eventNote);
+					curSelectedNote = eventNote;
+				}
+				updateGrid();
+			});
+	}
+	#end
 
 	function updateZoom() {
 		zoomTxt.text = 'Zoom: ' + zoomList[curZoom] + 'x';
