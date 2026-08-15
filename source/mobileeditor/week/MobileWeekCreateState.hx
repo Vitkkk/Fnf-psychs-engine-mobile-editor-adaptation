@@ -39,11 +39,13 @@ class MobileWeekCreateState extends MusicBeatState
         add(label('Nome interno', 36, 146));
         internalName = new FlxUIInputText(36, 180, FlxG.width - 72, 'minha-week', 24);
         internalName.setFormat(Paths.font('vcr.ttf'), 24, FlxColor.BLACK, LEFT);
+        internalName.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
         add(internalName);
 
         add(label('Titulo exibido', 36, 252));
         displayName = new FlxUIInputText(36, 286, FlxG.width - 72, 'MINHA WEEK', 24);
         displayName.setFormat(Paths.font('vcr.ttf'), 24, FlxColor.BLACK, LEFT);
+        displayName.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
         add(displayName);
 
         errorText = new FlxText(36, 350, FlxG.width - 72, '', 18);
@@ -79,6 +81,7 @@ class MobileWeekCreateState extends MusicBeatState
         week.weekName = shown;
         week.storyName = shown;
         WeekEditorState.weekFileName = id;
+        FlxG.stage.window.textInputEnabled = false;
         MusicBeatState.switchState(new WeekEditorState(week));
     }
 
@@ -95,6 +98,7 @@ class MobileWeekCreateState extends MusicBeatState
         #if android
         if (FlxG.android.justReleased.BACK)
         {
+            FlxG.stage.window.textInputEnabled = false;
             MusicBeatState.switchState(new MobileWeekListState());
             return;
         }
