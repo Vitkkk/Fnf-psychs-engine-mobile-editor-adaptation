@@ -37,6 +37,7 @@ import mobileeditor.MobileEditorSavePaths;
 #if android
 import mobileeditor.ui.MobileButton;
 import mobileeditor.week.MobileWeekCharactersSubState;
+import mobileeditor.week.MobileWeekSongsSubState;
 #end
 import ui.FlxVirtualPad;
 
@@ -123,10 +124,13 @@ class WeekEditorState extends MusicBeatState
 		reloadAllShit();
 
 		#if android
-		var mobileCharactersButton = new MobileButton(20, FlxG.height - 70, 250, 52, 'PERSONAGENS', openMobileWeekCharacters);
+		var mobileCharactersButton = new MobileButton(20, FlxG.height - 70, 230, 52, 'PERSONAGENS', openMobileWeekCharacters);
 		mobileCharactersButton.scrollFactor.set();
 		add(mobileCharactersButton);
-		var mobileSaveButton = new MobileButton(290, FlxG.height - 70, 190, 52, 'SALVAR', function() saveWeek(weekFile));
+		var mobileSongsButton = new MobileButton(270, FlxG.height - 70, 220, 52, 'MUSICAS', openMobileWeekSongs);
+		mobileSongsButton.scrollFactor.set();
+		add(mobileSongsButton);
+		var mobileSaveButton = new MobileButton(510, FlxG.height - 70, 190, 52, 'SALVAR', function() saveWeek(weekFile));
 		mobileSaveButton.scrollFactor.set();
 		add(mobileSaveButton);
 		#end
@@ -145,6 +149,14 @@ class WeekEditorState extends MusicBeatState
 	function openMobileWeekCharacters():Void
 	{
 		openSubState(new MobileWeekCharactersSubState(weekFile, function()
+		{
+			reloadAllShit();
+		}));
+	}
+
+	function openMobileWeekSongs():Void
+	{
+		openSubState(new MobileWeekSongsSubState(weekFile, function()
 		{
 			reloadAllShit();
 		}));
