@@ -5,68 +5,97 @@ on:
     branches: [main]
     paths: [.github/workflows/android-smoke-build.yml]
 
+concurrency:
+  group: psych-mobile-android-build
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       ANDROID_SETUP: 'true'
       HXCPP_COMPILE_THREADS: '4'
-      BUILD_TRIGGER: '12'
+      BUILD_TRIGGER: '13'
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 67cf7edc61110518ce44a862d4bd51a62cac7cfb
+          ref: agent/mobile-editor-milestone-1
+
       - uses: krdlab/setup-haxe@v1
         with:
           haxe-version: '4.2.5'
+
+      - name: Restore Haxe and native caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/haxelib
+            ~/.lime
+            export/debug/android/obj
+            export/debug/android/haxe
+          key: psych-mobile-android-v2-${{ runner.os }}-haxe425-flixel411-arm64-${{ hashFiles('Project.xml') }}
+          restore-keys: |
+            psych-mobile-android-v2-${{ runner.os }}-haxe425-flixel411-arm64-
+
       - name: Use JDK 17 for Android SDK manager
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Install Android SDK pieces and NDK r21e
         run: |
           SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
           if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/9.0/bin/sdkmanager"; fi
-          "$SDKMANAGER" --version
           yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" 'platform-tools' 'platforms;android-31' 'build-tools;31.0.0' 'ndk;21.4.7075529'
-      - name: Switch to JDK 11 for the legacy Lime Android build
+
+      - name: Switch to JDK 11 for legacy Lime Android build
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '11'
+
       - name: Configure haxelib
         run: |
           mkdir -p "$HOME/haxelib"
           haxelib setup "$HOME/haxelib"
-          haxelib install lime --quiet
-          haxelib install openfl --quiet
-          haxelib install hxcpp --quiet
-          haxelib install flixel 4.11.0 --quiet
-          haxelib install flixel-addons 2.11.0 --quiet
-          haxelib install flixel-ui 2.4.0 --quiet
-          haxelib install hscript --quiet
-          haxelib install actuate --quiet
-          haxelib git extension-webview https://github.com/HaxeExtension/extension-webview.git master --quiet
-          haxelib install linc_luajit --quiet
-          haxelib install hxvm-luajit --quiet
+          ensure_haxelib() {
+            LIB="$1"
+            VERSION="${2:-}"
+            if haxelib list | grep -q "^${LIB}:"; then return 0; fi
+            if [ -n "$VERSION" ]; then haxelib install "$LIB" "$VERSION" --quiet; else haxelib install "$LIB" --quiet; fi
+          }
+          ensure_haxelib lime
+          ensure_haxelib openfl
+          ensure_haxelib hxcpp
+          ensure_haxelib flixel 4.11.0
+          ensure_haxelib flixel-addons 2.11.0
+          ensure_haxelib flixel-ui 2.4.0
+          ensure_haxelib hscript
+          ensure_haxelib actuate
+          if ! haxelib list | grep -q '^extension-webview:'; then haxelib git extension-webview https://github.com/HaxeExtension/extension-webview.git master --quiet; fi
+          ensure_haxelib linc_luajit
+          ensure_haxelib hxvm-luajit
           haxelib set flixel 4.11.0
           haxelib set flixel-addons 2.11.0
           haxelib set flixel-ui 2.4.0
+
       - name: Configure Lime Android paths
         run: |
           haxelib run lime config ANDROID_SDK "$ANDROID_SDK_ROOT"
           haxelib run lime config ANDROID_NDK_ROOT "$ANDROID_SDK_ROOT/ndk/21.4.7075529"
           haxelib run lime config JAVA_HOME "$JAVA_HOME"
-      - name: Build debug APK
+
+      - name: Build debug APK ARM64
         run: haxelib run lime build android -debug -arm64
+
       - name: Locate APK
-        if: success()
         run: find export -type f -name '*.apk' -print
+
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: PsychEngine-MobileEditor-M1-ARM64
