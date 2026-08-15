@@ -1,5 +1,7 @@
 package mobileeditor.events;
 
+import mobileeditor.events.MobileEventDefinition.MobileEventValues;
+
 using StringTools;
 
 class MobileEventRegistry
