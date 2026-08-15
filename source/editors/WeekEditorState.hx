@@ -34,6 +34,10 @@ import sys.FileSystem;
 import WeekData;
 import mobileeditor.MobileSafeWriter;
 import mobileeditor.MobileEditorSavePaths;
+#if android
+import mobileeditor.ui.MobileButton;
+import mobileeditor.week.MobileWeekCharactersSubState;
+#end
 import ui.FlxVirtualPad;
 
 using StringTools;
@@ -118,6 +122,15 @@ class WeekEditorState extends MusicBeatState
 		addEditorBox();
 		reloadAllShit();
 
+		#if android
+		var mobileCharactersButton = new MobileButton(20, FlxG.height - 70, 250, 52, 'PERSONAGENS', openMobileWeekCharacters);
+		mobileCharactersButton.scrollFactor.set();
+		add(mobileCharactersButton);
+		var mobileSaveButton = new MobileButton(290, FlxG.height - 70, 190, 52, 'SALVAR', function() saveWeek(weekFile));
+		mobileSaveButton.scrollFactor.set();
+		add(mobileSaveButton);
+		#end
+
 		FlxG.mouse.visible = true;
 
 		// _pad = new FlxVirtualPad(FULL, NONE);
@@ -126,6 +139,17 @@ class WeekEditorState extends MusicBeatState
 
 		super.create();
 	}
+
+
+	#if android
+	function openMobileWeekCharacters():Void
+	{
+		openSubState(new MobileWeekCharactersSubState(weekFile, function()
+		{
+			reloadAllShit();
+		}));
+	}
+	#end
 
 	var UI_box:FlxUITabMenu;
 	var blockPressWhileTypingOn:Array<FlxUIInputText> = [];
