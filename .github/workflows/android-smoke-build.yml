@@ -12,12 +12,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       ANDROID_SETUP: 'true'
       HXCPP_COMPILE_THREADS: '4'
-      BUILD_TRIGGER: '17'
+      BUILD_TRIGGER: '18'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,23 +27,22 @@ jobs:
         with:
           haxe-version: '4.2.5'
 
-      - name: Restore Haxe libraries
-        uses: actions/cache@v4
+      - name: Restore Haxe environment
+        id: haxelib-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/haxelib
             ~/.lime
-          key: psych-haxelib-v2-${{ runner.os }}-haxe425-flixel411-${{ hashFiles('Project.xml') }}
-          restore-keys: |
-            psych-haxelib-v2-${{ runner.os }}-haxe425-flixel411-
+          key: psych-haxelib-v3-${{ runner.os }}-haxe425-lime832-openfl952-hxcpp432-flixel411
 
-      - name: Restore partial native build
+      - name: Restore hxcpp compile cache
         uses: actions/cache/restore@v4
         with:
-          path: export/debug/android
-          key: psych-native-arm64-${{ runner.os }}-${{ github.run_number }}
+          path: ~/.hxcpp_cache
+          key: psych-hxcpp-arm64-v1-${{ runner.os }}-${{ github.run_number }}
           restore-keys: |
-            psych-native-arm64-${{ runner.os }}-
+            psych-hxcpp-arm64-v1-${{ runner.os }}-
 
       - name: Use JDK 17 for Android SDK manager
         uses: actions/setup-java@v4
@@ -64,49 +63,82 @@ jobs:
           distribution: temurin
           java-version: '11'
 
-      - name: Configure haxelib
+      - name: Configure Haxe libraries
         run: |
-          mkdir -p "$HOME/haxelib"
+          mkdir -p "$HOME/haxelib" "$HOME/.hxcpp_cache"
           haxelib setup "$HOME/haxelib"
           ensure_haxelib() {
             LIB="$1"
-            VERSION="${2:-}"
-            if haxelib list | grep -q "^${LIB}:"; then return 0; fi
-            if [ -n "$VERSION" ]; then haxelib install "$LIB" "$VERSION" --quiet; else haxelib install "$LIB" --quiet; fi
+            VERSION="$2"
+            if haxelib list | grep -q "^${LIB}:.*\[${VERSION}\]"; then return 0; fi
+            haxelib install "$LIB" "$VERSION" --quiet
           }
-          ensure_haxelib lime
-          ensure_haxelib openfl
-          ensure_haxelib hxcpp
+          ensure_haxelib lime 8.3.2
+          ensure_haxelib openfl 9.5.2
+          ensure_haxelib hxcpp 4.3.2
           ensure_haxelib flixel 4.11.0
           ensure_haxelib flixel-addons 2.11.0
           ensure_haxelib flixel-ui 2.4.0
-          ensure_haxelib hscript
-          ensure_haxelib actuate
+          ensure_haxelib hscript 2.7.0
+          ensure_haxelib actuate 1.9.0
           if ! haxelib list | grep -q '^extension-webview:'; then haxelib git extension-webview https://github.com/HaxeExtension/extension-webview.git master --quiet; fi
-          ensure_haxelib linc_luajit
-          ensure_haxelib hxvm-luajit
+          ensure_haxelib linc_luajit 0.0.7
+          ensure_haxelib hxvm-luajit 0.0.0
+          haxelib set lime 8.3.2
+          haxelib set openfl 9.5.2
+          haxelib set hxcpp 4.3.2
           haxelib set flixel 4.11.0
           haxelib set flixel-addons 2.11.0
           haxelib set flixel-ui 2.4.0
+
+          cat > "$HOME/.hxcpp_config.xml" <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <xml>
+            <section id="vars">
+              <set name="HXCPP_COMPILE_CACHE" value="$HOME/.hxcpp_cache" />
+              <set name="HXCPP_CACHE_MB" value="6000" />
+              <set name="HXCPP_COMPILE_THREADS" value="4" />
+            </section>
+          </xml>
+          EOF
+
+      - name: Save Haxe environment
+        if: steps.haxelib-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/haxelib
+            ~/.lime
+          key: psych-haxelib-v3-${{ runner.os }}-haxe425-lime832-openfl952-hxcpp432-flixel411
 
       - name: Configure Lime Android paths
         run: |
           haxelib run lime config ANDROID_SDK "$ANDROID_SDK_ROOT"
           haxelib run lime config ANDROID_NDK_ROOT "$ANDROID_SDK_ROOT/ndk/21.4.7075529"
           haxelib run lime config JAVA_HOME "$JAVA_HOME"
+          haxelib run hxcpp cache list || true
 
       - name: Build debug APK ARM64
         id: apk-build
-        timeout-minutes: 8
         continue-on-error: true
-        run: haxelib run lime build android -debug -arm64
+        run: |
+          set +e
+          timeout --signal=TERM --kill-after=15s 600s haxelib run lime build android -debug -arm64
+          CODE=$?
+          pkill -TERM -f 'clang\+\+.*android64' || true
+          sleep 3
+          pkill -KILL -f 'clang\+\+.*android64' || true
+          find "$HOME/.hxcpp_cache" -type f -name '*.tmp' -delete 2>/dev/null || true
+          sync
+          echo "exit_code=$CODE" >> "$GITHUB_OUTPUT"
+          exit "$CODE"
 
-      - name: Save native progress
+      - name: Save hxcpp compile cache
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: export/debug/android
-          key: psych-native-arm64-${{ runner.os }}-${{ github.run_number }}
+          path: ~/.hxcpp_cache
+          key: psych-hxcpp-arm64-v1-${{ runner.os }}-${{ github.run_number }}
 
       - name: Require successful APK build
         if: steps.apk-build.outcome != 'success'
