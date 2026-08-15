@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 
 p = Path('source/editors/ChartingState.hx')
 s = p.read_text()
@@ -10,12 +11,12 @@ if 'MobileEventEditorSubState' not in s:
         raise SystemExit('import anchor missing')
     s = s.replace(old, new, 1)
 
-anchor = "\t\t_pad = new FlxVirtualPad(FULL, A);\n   \t_pad.alpha = 0.75;\n   \tthis.add(_pad);"
-insert = anchor + "\n\n\t\t#if android\n\t\tvar mobileEventButton = new MobileButton(FlxG.width - 310, FlxG.height - 72, 280, 52, '+ EVENTO', openMobileEventEditor);\n\t\tmobileEventButton.scrollFactor.set();\n\t\tadd(mobileEventButton);\n\t\t#end"
 if "'+ EVENTO', openMobileEventEditor" not in s:
-    if anchor not in s:
+    match = re.search(r'(?m)^[ \t]*this\.add\(_pad\);[ \t]*$', s)
+    if match is None:
         raise SystemExit('create anchor missing')
-    s = s.replace(anchor, insert, 1)
+    insert = "\n\n\t\t#if android\n\t\tvar mobileEventButton = new MobileButton(FlxG.width - 310, FlxG.height - 72, 280, 52, '+ EVENTO', openMobileEventEditor);\n\t\tmobileEventButton.scrollFactor.set();\n\t\tadd(mobileEventButton);\n\t\t#end"
+    s = s[:match.end()] + insert + s[match.end():]
 
 method_anchor = "\n\tfunction updateZoom() {"
 method = '''
