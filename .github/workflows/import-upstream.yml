@@ -1,0 +1,42 @@
+name: Import pinned upstream
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/import-upstream.yml
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout adaptation branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/mobile-editor-milestone-1
+          fetch-depth: 0
+      - name: Checkout pinned Android port
+        uses: actions/checkout@v4
+        with:
+          repository: kviks/Psych-Engine-Android
+          ref: 8d84350fa92ecdf2b359492e01524385df094851
+          path: .upstream
+      - name: Copy upstream without overwriting adaptation files
+        run: |
+          rsync -a --ignore-existing --exclude='.git' --exclude='.github/workflows/import-upstream.yml' .upstream/ ./
+          rm -rf .upstream
+      - name: Commit imported source
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'Nothing to import.'
+          else
+            git commit -m 'Import pinned Psych Engine Android source'
+            git push origin HEAD:agent/mobile-editor-milestone-1
+          fi
