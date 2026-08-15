@@ -87,7 +87,7 @@ class MobileWeekAdvancedSubState extends MusicBeatSubstate
         return out;
     }
 
-    function makeInput(x:Float, y:Float, width:Float, value:String):FlxUIInputText
+    function makeInput(x:Float, y:Float, width:Int, value:String):FlxUIInputText
     {
         var input = new FlxUIInputText(x, y, width, value == null ? '' : value, 21);
         input.setFormat(Paths.font('vcr.ttf'), 21, FlxColor.BLACK, LEFT);
