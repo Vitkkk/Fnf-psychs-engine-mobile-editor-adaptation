@@ -2,7 +2,6 @@ package mobileeditor;
 
 #if sys
 import sys.FileSystem;
-import sys.io.File;
 #end
 
 using StringTools;
@@ -32,6 +31,14 @@ class MobileProjectContext
         return out;
     }
 
+    public static function activeMod():String
+    {
+        if (currentMod != null && currentMod.length > 0) return currentMod;
+        if (Paths.currentModDirectory != null && Paths.currentModDirectory.length > 0)
+            return sanitizeModName(Paths.currentModDirectory);
+        return '';
+    }
+
     public static function modsRoot():String
     {
         #if MODS_ALLOWED
@@ -43,7 +50,7 @@ class MobileProjectContext
 
     public static function projectRoot(?mod:String):String
     {
-        var target = sanitizeModName(mod == null ? currentMod : mod);
+        var target = sanitizeModName(mod == null ? activeMod() : mod);
         if (target.length == 0) return modsRoot();
         return modsRoot() + target + '/';
     }
