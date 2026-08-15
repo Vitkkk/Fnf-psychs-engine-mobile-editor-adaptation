@@ -11,7 +11,7 @@ import mobileeditor.MobileAssetDiscovery;
 /** Large searchable character picker shared by Week, Song and Event editors. */
 class MobileCharacterPickerSubState extends MusicBeatSubstate
 {
-    static inline var PAGE_SIZE:Int = 5;
+    static inline var ITEMS_PER_PAGE:Int = 5;
 
     var all:Array<String> = [];
     var filtered:Array<String> = [];
@@ -59,7 +59,7 @@ class MobileCharacterPickerSubState extends MusicBeatSubstate
             if (page > 0) { page--; rebuildRows(); }
         }));
         add(new MobileButton(FlxG.width - 178, FlxG.height - 72, 150, 48, 'PAG >', function() {
-            if ((page + 1) * PAGE_SIZE < filtered.length) { page++; rebuildRows(); }
+            if ((page + 1) * ITEMS_PER_PAGE < filtered.length) { page++; rebuildRows(); }
         }));
 
         all = MobileAssetDiscovery.listCharacters();
@@ -85,8 +85,8 @@ class MobileCharacterPickerSubState extends MusicBeatSubstate
         for (item in rows) { remove(item, true); item.destroy(); }
         rows = [];
 
-        var start = page * PAGE_SIZE;
-        var end = Std.int(Math.min(start + PAGE_SIZE, filtered.length));
+        var start = page * ITEMS_PER_PAGE;
+        var end = Std.int(Math.min(start + ITEMS_PER_PAGE, filtered.length));
         var y:Float = 132;
         for (i in start...end)
         {
@@ -115,7 +115,7 @@ class MobileCharacterPickerSubState extends MusicBeatSubstate
             rows.push(empty); add(empty);
         }
 
-        var pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        var pages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
         pageText.text = 'Pagina ' + (page + 1) + ' / ' + pages + '   |   ' + filtered.length + ' personagens';
     }
 
