@@ -12,6 +12,9 @@ import flixel.math.FlxMath;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.system.FlxSound;
+#if android
+import mobileeditor.week.MobileWeekListState;
+#end
 
 using StringTools;
 
@@ -32,7 +35,6 @@ class MasterEditorMenu extends MusicBeatState
 	{
 		FlxG.camera.bgColor = FlxColor.BLACK;
 		#if desktop
-		// Updating Discord Rich Presence
 		DiscordClient.changePresence("Editors Main Menu", null);
 		#end
 
@@ -62,14 +64,8 @@ class MasterEditorMenu extends MusicBeatState
 
 	override function update(elapsed:Float)
 	{
-		if (controls.UI_UP_P)
-		{
-			changeSelection(-1);
-		}
-		if (controls.UI_DOWN_P)
-		{
-			changeSelection(1);
-		}
+		if (controls.UI_UP_P) changeSelection(-1);
+		if (controls.UI_DOWN_P) changeSelection(1);
 
 		if (controls.BACK)
 		{
@@ -82,7 +78,11 @@ class MasterEditorMenu extends MusicBeatState
 				case 'Character Editor':
 					LoadingState.loadAndSwitchState(new CharacterEditorState(Character.DEFAULT_CHARACTER, false));
 				case 'Week Editor':
+					#if android
+					MusicBeatState.switchState(new MobileWeekListState());
+					#else
 					MusicBeatState.switchState(new WeekEditorState());
+					#end
 				case 'Menu Character Editor':
 					MusicBeatState.switchState(new MenuCharacterEditorState());
 				case 'Dialogue Portrait Editor':
@@ -99,15 +99,8 @@ class MasterEditorMenu extends MusicBeatState
 		{
 			item.targetY = bullShit - curSelected;
 			bullShit++;
-
 			item.alpha = 0.6;
-			// item.setGraphicSize(Std.int(item.width * 0.8));
-
-			if (item.targetY == 0)
-			{
-				item.alpha = 1;
-				// item.setGraphicSize(Std.int(item.width));
-			}
+			if (item.targetY == 0) item.alpha = 1;
 		}
 		super.update(elapsed);
 	}
@@ -115,12 +108,8 @@ class MasterEditorMenu extends MusicBeatState
 	function changeSelection(change:Int = 0)
 	{
 		FlxG.sound.play(Paths.sound('scrollMenu'), 0.4);
-
 		curSelected += change;
-
-		if (curSelected < 0)
-			curSelected = options.length - 1;
-		if (curSelected >= options.length)
-			curSelected = 0;
+		if (curSelected < 0) curSelected = options.length - 1;
+		if (curSelected >= options.length) curSelected = 0;
 	}
 }
