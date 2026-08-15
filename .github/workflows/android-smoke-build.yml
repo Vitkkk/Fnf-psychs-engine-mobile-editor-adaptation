@@ -11,7 +11,7 @@ jobs:
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       ANDROID_SETUP: 'true'
-      BUILD_TRIGGER: '8'
+      BUILD_TRIGGER: '9'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,7 +60,7 @@ jobs:
           haxelib run lime config ANDROID_NDK_ROOT "$ANDROID_SDK_ROOT/ndk/21.4.7075529"
           haxelib run lime config JAVA_HOME "$JAVA_HOME"
       - name: Build debug APK
-        run: haxelib run lime build android -debug
+        run: haxelib run lime build android -debug -arm64
       - name: Locate APK
         if: success()
         run: find export -type f -name '*.apk' -print
@@ -68,6 +68,6 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: PsychEngine-MobileEditor-M1
+          name: PsychEngine-MobileEditor-M1-ARM64
           path: export/**/*.apk
           if-no-files-found: error
