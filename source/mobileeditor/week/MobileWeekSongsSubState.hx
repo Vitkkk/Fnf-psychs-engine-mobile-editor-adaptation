@@ -5,15 +5,11 @@ import flixel.FlxBasic;
 import flixel.FlxSprite;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
-import flixel.addons.ui.FlxUIInputText;
+import mobileeditor.MobileAssetDiscovery;
 import mobileeditor.ui.MobileButton;
 import WeekData.WeekFile;
 
-/**
- * Touch-first editor for the WeekFile.songs array.
- * It preserves the original Psych entry shape and only changes the song id/name
- * while keeping icon/color/extra values when an existing entry is edited.
- */
+/** Touch-first editor for WeekFile.songs with visual song + icon selection. */
 class MobileWeekSongsSubState extends MusicBeatSubstate
 {
     static inline var ITEMS_PER_PAGE:Int = 4;
@@ -23,7 +19,6 @@ class MobileWeekSongsSubState extends MusicBeatSubstate
     var page:Int = 0;
     var rows:Array<FlxBasic> = [];
     var pageText:FlxText;
-    var addInput:FlxUIInputText;
 
     public function new(week:WeekFile, onChanged:Void->Void)
     {
@@ -42,21 +37,18 @@ class MobileWeekSongsSubState extends MusicBeatSubstate
         title.setFormat(Paths.font('vcr.ttf'), 30, FlxColor.WHITE, LEFT);
         add(title);
 
-        addInput = new FlxUIInputText(28, 66, FlxG.width - 310, '', 21);
-        addInput.setFormat(Paths.font('vcr.ttf'), 21, FlxColor.BLACK, LEFT);
-        addInput.focusGained = () -> FlxG.stage.window.textInputEnabled = true;
-        add(addInput);
+        var hint = new FlxText(28, 58, FlxG.width - 300,
+            'Selecione musicas e icones encontrados automaticamente.', 16);
+        hint.setFormat(Paths.font('vcr.ttf'), 16, 0xFFB8C3D9, LEFT);
+        add(hint);
 
-        add(new MobileButton(FlxG.width - 262, 62, 234, 52, '+ ADICIONAR', addSong));
+        add(new MobileButton(FlxG.width - 268, 20, 240, 56, '+ ADICIONAR MUSICA', addSongVisual));
 
-        pageText = new FlxText(FlxG.width / 2 - 160, FlxG.height - 62, 320, '', 18);
+        pageText = new FlxText(FlxG.width / 2 - 180, FlxG.height - 62, 360, '', 18);
         pageText.setFormat(Paths.font('vcr.ttf'), 18, FlxColor.WHITE, CENTER);
         add(pageText);
 
-        add(new MobileButton(28, FlxG.height - 72, 150, 48, '< VOLTAR', function() {
-            FlxG.stage.window.textInputEnabled = false;
-            close();
-        }));
+        add(new MobileButton(28, FlxG.height - 72, 150, 48, '< VOLTAR', close));
         add(new MobileButton(194, FlxG.height - 72, 130, 48, '< PAG', function() {
             if (page > 0) { page--; rebuild(); }
         }));
@@ -67,16 +59,17 @@ class MobileWeekSongsSubState extends MusicBeatSubstate
         rebuild();
     }
 
-    function addSong():Void
+    function addSongVisual():Void
     {
-        var name = StringTools.trim(addInput.text);
-        if (name.length == 0) return;
-        week.songs.push([name, 'dad', [146, 113, 253], name]);
-        addInput.text = '';
-        FlxG.stage.window.textInputEnabled = false;
-        page = Std.int((week.songs.length - 1) / ITEMS_PER_PAGE);
-        onChanged();
-        rebuild();
+        openSubState(new MobileSongPickerSubState(function(songId:String) {
+            openSubState(new MobileIconPickerSubState(function(iconId:String) {
+                var display = MobileAssetDiscovery.prettify(songId);
+                week.songs.push([display, iconId, [146, 113, 253], display]);
+                page = Std.int((week.songs.length - 1) / ITEMS_PER_PAGE);
+                onChanged();
+                rebuild();
+            }));
+        }));
     }
 
     function rebuild():Void
@@ -88,45 +81,68 @@ class MobileWeekSongsSubState extends MusicBeatSubstate
         if (page > maxPage) page = maxPage;
         var start = page * ITEMS_PER_PAGE;
         var end = Std.int(Math.min(start + ITEMS_PER_PAGE, week.songs.length));
-        var y:Float = 128;
+        var y:Float = 96;
 
         for (i in start...end)
         {
             var index = i;
             var entry:Array<Dynamic> = cast week.songs[index];
-            var name = entry.length > 0 ? Std.string(entry[0]) : 'song';
-            var icon = entry.length > 1 ? Std.string(entry[1]) : 'dad';
+            while (entry.length < 4) entry.push(entry.length == 1 ? 'dad' : (entry.length == 2 ? [146, 113, 253] : Std.string(entry[0])));
+            var name = Std.string(entry[0]);
+            var iconId = Std.string(entry[1]);
 
-            var card = new FlxSprite(28, y).makeGraphic(FlxG.width - 56, 104, 0xFF262B35);
+            var card = new FlxSprite(28, y).makeGraphic(FlxG.width - 56, 112, 0xFF262B35);
             rows.push(card); add(card);
 
-            var title = new FlxText(46, y + 13, FlxG.width - 500, name, 22);
+            var icon = new HealthIcon(iconId, false);
+            icon.setGraphicSize(78, 78);
+            icon.updateHitbox();
+            icon.setPosition(42, y + 17);
+            rows.push(icon); add(icon);
+
+            var title = new FlxText(132, y + 14, FlxG.width - 720, name, 22);
             title.setFormat(Paths.font('vcr.ttf'), 22, FlxColor.WHITE, LEFT);
             rows.push(title); add(title);
 
-            var subtitle = new FlxText(46, y + 49, FlxG.width - 500,
-                'Nome interno: ' + normalizeSongId(name) + '  |  Icone: ' + icon, 15);
-            subtitle.setFormat(Paths.font('vcr.ttf'), 15, 0xFFB8C3D9, LEFT);
+            var subtitle = new FlxText(132, y + 48, FlxG.width - 720,
+                'Song ID: ' + Paths.formatToSongPath(name) + '  |  Icone: ' + iconId, 14);
+            subtitle.setFormat(Paths.font('vcr.ttf'), 14, 0xFFB8C3D9, LEFT);
             rows.push(subtitle); add(subtitle);
 
-            var up = new MobileButton(FlxG.width - 430, y + 26, 78, 52, 'UP', function() move(index, -1));
+            var captured = index;
+            var iconButton = new MobileButton(FlxG.width - 570, y + 28, 154, 52, 'ICONE', function() changeIcon(captured));
+            rows.push(iconButton); add(iconButton);
+            var up = new MobileButton(FlxG.width - 402, y + 28, 74, 52, 'UP', function() move(captured, -1));
             rows.push(up); add(up);
-            var down = new MobileButton(FlxG.width - 340, y + 26, 78, 52, 'DOWN', function() move(index, 1));
+            var down = new MobileButton(FlxG.width - 316, y + 28, 86, 52, 'DOWN', function() move(captured, 1));
             rows.push(down); add(down);
-            var removeButton = new MobileButton(FlxG.width - 250, y + 26, 200, 52, 'REMOVER', function() removeSong(index));
+            var removeButton = new MobileButton(FlxG.width - 218, y + 28, 166, 52, 'REMOVER', function() removeSong(captured));
             rows.push(removeButton); add(removeButton);
-            y += 116;
+            y += 122;
         }
 
         if (week.songs.length == 0)
         {
-            var empty = new FlxText(28, 180, FlxG.width - 56, 'Nenhuma musica. Digite acima e toque + ADICIONAR.', 21);
-            empty.setFormat(Paths.font('vcr.ttf'), 21, FlxColor.WHITE, CENTER);
+            var empty = new FlxText(28, 180, FlxG.width - 56,
+                'Nenhuma musica. Toque em + ADICIONAR MUSICA.', 22);
+            empty.setFormat(Paths.font('vcr.ttf'), 22, FlxColor.WHITE, CENTER);
             rows.push(empty); add(empty);
         }
 
         pageText.text = 'Pagina ' + (page + 1) + ' / ' + Math.max(1, Math.ceil(week.songs.length / ITEMS_PER_PAGE))
             + '   |   ' + week.songs.length + ' musicas';
+    }
+
+    function changeIcon(index:Int):Void
+    {
+        if (index < 0 || index >= week.songs.length) return;
+        openSubState(new MobileIconPickerSubState(function(iconId:String) {
+            var entry:Array<Dynamic> = cast week.songs[index];
+            while (entry.length < 2) entry.push('dad');
+            entry[1] = iconId;
+            onChanged();
+            rebuild();
+        }));
     }
 
     function move(index:Int, delta:Int):Void
@@ -148,20 +164,10 @@ class MobileWeekSongsSubState extends MusicBeatSubstate
         rebuild();
     }
 
-    function normalizeSongId(value:String):String
-    {
-        return Paths.formatToSongPath(value);
-    }
-
     override function update(elapsed:Float):Void
     {
         #if android
-        if (FlxG.android.justReleased.BACK)
-        {
-            FlxG.stage.window.textInputEnabled = false;
-            close();
-            return;
-        }
+        if (FlxG.android.justReleased.BACK) { close(); return; }
         #end
         super.update(elapsed);
     }
