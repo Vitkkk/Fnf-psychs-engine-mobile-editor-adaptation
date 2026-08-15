@@ -53,6 +53,7 @@ import mobileeditor.MobileSafeWriter;
 import mobileeditor.MobileEditorSavePaths;
 #if android
 import mobileeditor.events.MobileEventEditorSubState;
+import mobileeditor.chart.MobileChartCharactersSubState;
 import mobileeditor.ui.MobileButton;
 #end
 
@@ -354,6 +355,9 @@ class ChartingState extends MusicBeatState
     	this.add(_pad);
 
 		#if android
+		var mobileCharactersButton = new MobileButton(FlxG.width - 610, FlxG.height - 72, 280, 52, 'PERSONAGENS', openMobileChartCharacters);
+		mobileCharactersButton.scrollFactor.set();
+		add(mobileCharactersButton);
 		var mobileEventButton = new MobileButton(FlxG.width - 310, FlxG.height - 72, 280, 52, '+ EVENTO', openMobileEventEditor);
 		mobileEventButton.scrollFactor.set();
 		add(mobileEventButton);
@@ -1504,6 +1508,18 @@ class ChartingState extends MusicBeatState
 					curSelectedNote = eventNote;
 				}
 				updateGrid();
+			}));
+	}
+
+	function openMobileChartCharacters():Void
+	{
+		openSubState(new MobileChartCharactersSubState(_song.player1, _song.player2, _song.player3,
+			function(player:String, opponent:String, girlfriend:String)
+			{
+				_song.player1 = player;
+				_song.player2 = opponent;
+				_song.player3 = girlfriend;
+				updateHeads();
 			}));
 	}
 	#end
