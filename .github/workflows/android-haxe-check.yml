@@ -11,7 +11,7 @@ jobs:
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       ANDROID_SETUP: 'true'
-      CHECK_REVISION: '7'
+      CHECK_REVISION: '8'
     steps:
       - uses: actions/checkout@v4
         with:
