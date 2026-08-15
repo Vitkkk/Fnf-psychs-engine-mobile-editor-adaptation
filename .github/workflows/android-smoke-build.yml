@@ -17,7 +17,7 @@ jobs:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       ANDROID_SETUP: 'true'
       HXCPP_COMPILE_THREADS: '4'
-      BUILD_TRIGGER: '16'
+      BUILD_TRIGGER: '17'
     steps:
       - uses: actions/checkout@v4
         with:
