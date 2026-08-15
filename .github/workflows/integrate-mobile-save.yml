@@ -1,0 +1,58 @@
+name: Integrate mobile direct save
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/integrate-mobile-save.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mobile-editor-milestone-1
+          fetch-depth: 0
+      - name: Patch Week and Chart editor save paths
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          week = Path('source/editors/WeekEditorState.hx')
+          s = week.read_text()
+          if 'import mobileeditor.MobileSafeWriter;' not in s:
+              s = s.replace('import WeekData;\n', 'import WeekData;\nimport mobileeditor.MobileSafeWriter;\nimport mobileeditor.MobileEditorSavePaths;\n')
+          old = '''\tpublic static function saveWeek(weekFile:WeekFile) {\n\t\tvar data:String = Json.stringify(weekFile, "\\t");\n\n\t\topenfl.system.System.setClipboard(data.trim());\n\n\t\tif (data.length > 0)\n\t\t{\n\t\t\t_file = new FileReference();\n\t\t\t_file.addEventListener(Event.COMPLETE, onSaveComplete);\n\t\t\t_file.addEventListener(Event.CANCEL, onSaveCancel);\n\t\t\t_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);\n\t\t\t_file.save(data, weekFileName + ".json");\n\t\t}\n\t}\n'''
+          new = '''\tpublic static function saveWeek(weekFile:WeekFile) {\n\t\tvar data:String = Json.stringify(weekFile, "\\t");\n\n\t\topenfl.system.System.setClipboard(data.trim());\n\n\t\t#if android\n\t\tif (data.length > 0)\n\t\t{\n\t\t\tvar target = MobileEditorSavePaths.week(weekFileName);\n\t\t\tif (MobileSafeWriter.writeTextAtomic(target, data.trim(), true))\n\t\t\t\tFlxG.log.notice("Week saved directly to " + target);\n\t\t\telse\n\t\t\t\tFlxG.log.error("Problem saving Week directly to mod folder");\n\t\t}\n\t\t#else\n\t\tif (data.length > 0)\n\t\t{\n\t\t\t_file = new FileReference();\n\t\t\t_file.addEventListener(Event.COMPLETE, onSaveComplete);\n\t\t\t_file.addEventListener(Event.CANCEL, onSaveCancel);\n\t\t\t_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);\n\t\t\t_file.save(data, weekFileName + ".json");\n\t\t}\n\t\t#end\n\t}\n'''
+          if old not in s:
+              raise SystemExit('Week save block not found')
+          s = s.replace(old, new)
+          week.write_text(s)
+
+          chart = Path('source/editors/ChartingState.hx')
+          s = chart.read_text()
+          if 'import mobileeditor.MobileSafeWriter;' not in s:
+              s = s.replace('import ui.FlxVirtualPad;\n', 'import ui.FlxVirtualPad;\nimport mobileeditor.MobileSafeWriter;\nimport mobileeditor.MobileEditorSavePaths;\n')
+          old = '''\t\tif ((data != null) && (data.length > 0))\n\t\t{\n\t\t\t_file = new FileReference();\n\t\t\t_file.addEventListener(Event.COMPLETE, onSaveComplete);\n\t\t\t_file.addEventListener(Event.CANCEL, onSaveCancel);\n\t\t\t_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);\n\t\t\t_file.save(data.trim(), Paths.formatToSongPath(_song.song) + ".json");\n\t\t}\n'''
+          new = '''\t\t#if android\n\t\tif ((data != null) && (data.length > 0))\n\t\t{\n\t\t\tvar target = MobileEditorSavePaths.song(_song.song);\n\t\t\tif (MobileSafeWriter.writeTextAtomic(target, data.trim(), true))\n\t\t\t\tFlxG.log.notice("Chart saved directly to " + target);\n\t\t\telse\n\t\t\t\tFlxG.log.error("Problem saving Chart directly to mod folder");\n\t\t}\n\t\t#else\n\t\tif ((data != null) && (data.length > 0))\n\t\t{\n\t\t\t_file = new FileReference();\n\t\t\t_file.addEventListener(Event.COMPLETE, onSaveComplete);\n\t\t\t_file.addEventListener(Event.CANCEL, onSaveCancel);\n\t\t\t_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);\n\t\t\t_file.save(data.trim(), Paths.formatToSongPath(_song.song) + ".json");\n\t\t}\n\t\t#end\n'''
+          if old not in s:
+              raise SystemExit('Chart save block not found')
+          s = s.replace(old, new, 1)
+
+          old_events = '''\t\tif ((data != null) && (data.length > 0))\n\t\t{\n\t\t\t_file = new FileReference();\n\t\t\t_file.addEventListener(Event.COMPLETE, onSaveComplete);\n\t\t\t_file.addEventListener(Event.CANCEL, onSaveCancel);\n\t\t\t_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);\n\t\t\t_file.save(data.trim(), "events.json");\n\t\t}\n'''
+          new_events = '''\t\t#if android\n\t\tif ((data != null) && (data.length > 0))\n\t\t{\n\t\t\tvar target = MobileEditorSavePaths.events(_song.song);\n\t\t\tif (MobileSafeWriter.writeTextAtomic(target, data.trim(), true))\n\t\t\t\tFlxG.log.notice("Events saved directly to " + target);\n\t\t\telse\n\t\t\t\tFlxG.log.error("Problem saving Events directly to mod folder");\n\t\t}\n\t\t#else\n\t\tif ((data != null) && (data.length > 0))\n\t\t{\n\t\t\t_file = new FileReference();\n\t\t\t_file.addEventListener(Event.COMPLETE, onSaveComplete);\n\t\t\t_file.addEventListener(Event.CANCEL, onSaveCancel);\n\t\t\t_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);\n\t\t\t_file.save(data.trim(), "events.json");\n\t\t}\n\t\t#end\n'''
+          if old_events not in s:
+              raise SystemExit('Events save block not found')
+          s = s.replace(old_events, new_events, 1)
+          chart.write_text(s)
+          PY
+      - name: Commit integration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add source/editors/WeekEditorState.hx source/editors/ChartingState.hx
+          git commit -m 'Integrate direct mobile Week Chart and Event saving'
+          git push origin HEAD:agent/mobile-editor-milestone-1
