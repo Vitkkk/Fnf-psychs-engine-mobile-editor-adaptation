@@ -49,6 +49,8 @@ import flash.media.Sound;
 #end
 
 import ui.FlxVirtualPad;
+import mobileeditor.MobileSafeWriter;
+import mobileeditor.MobileEditorSavePaths;
 
 using StringTools;
 
@@ -2106,6 +2108,16 @@ class ChartingState extends MusicBeatState
 
 		openfl.system.System.setClipboard(data.trim());
 
+		#if android
+		if ((data != null) && (data.length > 0))
+		{
+			var target = MobileEditorSavePaths.song(_song.song);
+			if (MobileSafeWriter.writeTextAtomic(target, data.trim(), true))
+				FlxG.log.notice("Chart saved directly to " + target);
+			else
+				FlxG.log.error("Problem saving Chart directly to mod folder");
+		}
+		#else
 		if ((data != null) && (data.length > 0))
 		{
 			_file = new FileReference();
@@ -2114,6 +2126,7 @@ class ChartingState extends MusicBeatState
 			_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 			_file.save(data.trim(), Paths.formatToSongPath(_song.song) + ".json");
 		}
+		#end
 	}
 
 	private function saveEvents()
@@ -2166,6 +2179,16 @@ class ChartingState extends MusicBeatState
 
 		openfl.system.System.setClipboard(data.trim());
 
+		#if android
+		if ((data != null) && (data.length > 0))
+		{
+			var target = MobileEditorSavePaths.events(_song.song);
+			if (MobileSafeWriter.writeTextAtomic(target, data.trim(), true))
+				FlxG.log.notice("Events saved directly to " + target);
+			else
+				FlxG.log.error("Problem saving Events directly to mod folder");
+		}
+		#else
 		if ((data != null) && (data.length > 0))
 		{
 			_file = new FileReference();
@@ -2174,6 +2197,7 @@ class ChartingState extends MusicBeatState
 			_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 			_file.save(data.trim(), "events.json");
 		}
+		#end
 	}
 
 	function onSaveComplete(_):Void

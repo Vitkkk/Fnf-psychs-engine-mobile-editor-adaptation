@@ -32,6 +32,8 @@ import sys.io.File;
 import sys.FileSystem;
 #end
 import WeekData;
+import mobileeditor.MobileSafeWriter;
+import mobileeditor.MobileEditorSavePaths;
 import ui.FlxVirtualPad;
 
 using StringTools;
@@ -535,6 +537,16 @@ class WeekEditorState extends MusicBeatState
 
 		openfl.system.System.setClipboard(data.trim());
 
+		#if android
+		if (data.length > 0)
+		{
+			var target = MobileEditorSavePaths.week(weekFileName);
+			if (MobileSafeWriter.writeTextAtomic(target, data.trim(), true))
+				FlxG.log.notice("Week saved directly to " + target);
+			else
+				FlxG.log.error("Problem saving Week directly to mod folder");
+		}
+		#else
 		if (data.length > 0)
 		{
 			_file = new FileReference();
@@ -543,6 +555,7 @@ class WeekEditorState extends MusicBeatState
 			_file.addEventListener(IOErrorEvent.IO_ERROR, onSaveError);
 			_file.save(data, weekFileName + ".json");
 		}
+		#end
 	}
 	
 	private static function onSaveComplete(_):Void
