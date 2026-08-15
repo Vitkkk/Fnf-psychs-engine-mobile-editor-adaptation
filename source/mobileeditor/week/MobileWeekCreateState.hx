@@ -57,7 +57,7 @@ class MobileWeekCreateState extends MusicBeatState
         return out;
     }
 
-    function input(x:Float, y:Float, width:Float, value:String):FlxUIInputText
+    function input(x:Float, y:Float, width:Int, value:String):FlxUIInputText
     {
         var out = new FlxUIInputText(x, y, width, value, 24);
         out.setFormat(Paths.font('vcr.ttf'), 24, FlxColor.BLACK, LEFT);
