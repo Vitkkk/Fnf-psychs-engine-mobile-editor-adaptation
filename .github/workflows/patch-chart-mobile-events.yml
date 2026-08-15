@@ -8,6 +8,9 @@ on:
 permissions:
   contents: write
 
+env:
+  PATCH_REVISION: '2'
+
 jobs:
   patch:
     runs-on: ubuntu-22.04
