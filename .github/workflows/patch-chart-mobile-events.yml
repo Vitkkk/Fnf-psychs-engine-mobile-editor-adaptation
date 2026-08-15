@@ -1,0 +1,83 @@
+name: Patch Chart mobile events
+
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/patch-chart-mobile-events.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/mobile-editor-milestone-1
+          fetch-depth: 0
+      - name: Integrate mobile event editor
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('source/editors/ChartingState.hx')
+          s = p.read_text()
+
+          old = "import mobileeditor.MobileSafeWriter;\nimport mobileeditor.MobileEditorSavePaths;"
+          new = "import mobileeditor.MobileSafeWriter;\nimport mobileeditor.MobileEditorSavePaths;\n#if android\nimport mobileeditor.events.MobileEventEditorSubState;\nimport mobileeditor.ui.MobileButton;\n#end"
+          if 'MobileEventEditorSubState' not in s:
+              if old not in s: raise SystemExit('import anchor missing')
+              s = s.replace(old, new, 1)
+
+          anchor = "\t\t_pad = new FlxVirtualPad(FULL, A);\n   \t_pad.alpha = 0.75;\n   \tthis.add(_pad);"
+          insert = anchor + "\n\n\t\t#if android\n\t\tvar mobileEventButton = new MobileButton(FlxG.width - 310, FlxG.height - 72, 280, 52, '+ EVENTO', openMobileEventEditor);\n\t\tmobileEventButton.scrollFactor.set();\n\t\tadd(mobileEventButton);\n\t\t#end"
+          if "'+ EVENTO', openMobileEventEditor" not in s:
+              if anchor not in s: raise SystemExit('create anchor missing')
+              s = s.replace(anchor, insert, 1)
+
+          method_anchor = "\n\tfunction updateZoom() {"
+          method = r'''
+
+	#if android
+	function openMobileEventEditor():Void
+	{
+		var editingEvent:Bool = curSelectedNote != null && curSelectedNote[1] < 0;
+		var name:String = editingEvent ? Std.string(curSelectedNote[2]) : 'Change Character';
+		var value1:String = editingEvent && curSelectedNote.length > 3 ? Std.string(curSelectedNote[3]) : '';
+		var value2:String = editingEvent && curSelectedNote.length > 4 ? Std.string(curSelectedNote[4]) : '';
+
+		openSubState(new MobileEventEditorSubState(name, value1, value2,
+			_song.player1, _song.player2, _song.player3,
+			function(newName:String, newValue1:String, newValue2:String)
+			{
+				if (editingEvent)
+				{
+					curSelectedNote[2] = newName;
+					curSelectedNote[3] = newValue1;
+					curSelectedNote[4] = newValue2;
+				}
+				else
+				{
+					var eventNote:Array<Dynamic> = [Conductor.songPosition, -1, newName, newValue1, newValue2];
+					_song.notes[curSection].sectionNotes.push(eventNote);
+					curSelectedNote = eventNote;
+				}
+				updateGrid();
+			});
+	}
+	#end
+'''
+          if 'function openMobileEventEditor():Void' not in s:
+              if method_anchor not in s: raise SystemExit('method anchor missing')
+              s = s.replace(method_anchor, method + method_anchor, 1)
+
+          p.write_text(s)
+          PY
+          git diff --check
+          git diff -- source/editors/ChartingState.hx
+          if git diff --quiet; then exit 0; fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add source/editors/ChartingState.hx
+          git commit -m "Integrate mobile Event Editor with Chart"
+          git push origin HEAD:agent/mobile-editor-milestone-1
