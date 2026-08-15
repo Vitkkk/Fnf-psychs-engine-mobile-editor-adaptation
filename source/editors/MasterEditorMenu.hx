@@ -13,7 +13,7 @@ import flixel.text.FlxText;
 import flixel.util.FlxColor;
 import flixel.system.FlxSound;
 #if android
-import mobileeditor.week.MobileWeekListState;
+import mobileeditor.MobileModdingEditorMenu;
 #end
 
 using StringTools;
@@ -28,11 +28,14 @@ class MasterEditorMenu extends MusicBeatState
 		'Character Editor'
 	];
 	private var grpTexts:FlxTypedGroup<Alphabet>;
-
 	private var curSelected = 0;
 
 	override function create()
 	{
+		#if android
+		options.push('Mobile Modding Editors');
+		#end
+
 		FlxG.camera.bgColor = FlxColor.BLACK;
 		#if desktop
 		DiscordClient.changePresence("Editors Main Menu", null);
@@ -78,17 +81,17 @@ class MasterEditorMenu extends MusicBeatState
 				case 'Character Editor':
 					LoadingState.loadAndSwitchState(new CharacterEditorState(Character.DEFAULT_CHARACTER, false));
 				case 'Week Editor':
-					#if android
-					MusicBeatState.switchState(new MobileWeekListState());
-					#else
 					MusicBeatState.switchState(new WeekEditorState());
-					#end
 				case 'Menu Character Editor':
 					MusicBeatState.switchState(new MenuCharacterEditorState());
 				case 'Dialogue Portrait Editor':
 					LoadingState.loadAndSwitchState(new DialogueCharacterEditorState(), false);
 				case 'Dialogue Editor':
 					LoadingState.loadAndSwitchState(new DialogueEditorState(), false);
+				#if android
+				case 'Mobile Modding Editors':
+					MusicBeatState.switchState(new MobileModdingEditorMenu());
+				#end
 			}
 			FlxG.sound.music.volume = 0;
 			FreeplayState.destroyFreeplayVocals();
