@@ -1,97 +1,15 @@
-name: Android cached retry
+name: Android cached retry (manual only)
 
 on:
-  workflow_run:
-    workflows: ["Android smoke build"]
-    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: psych-mobile-android-build
+  cancel-in-progress: true
 
 jobs:
-  retry:
-    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+  notice:
     runs-on: ubuntu-22.04
-    timeout-minutes: 18
-    env:
-      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-      ANDROID_SETUP: 'true'
-      HXCPP_COMPILE_THREADS: '4'
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: agent/mobile-editor-milestone-1
-
-      - uses: krdlab/setup-haxe@v1
-        with:
-          haxe-version: '4.2.5'
-
-      - name: Restore Haxe environment
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/haxelib
-            ~/.lime
-          key: psych-haxelib-v3-${{ runner.os }}-haxe425-lime832-openfl952-hxcpp432-flixel411
-
-      - name: Restore hxcpp compile cache
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/.hxcpp_cache
-          key: psych-hxcpp-arm64-retry-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: |
-            psych-hxcpp-arm64-v1-${{ runner.os }}-
-
-      - name: Use JDK 17 for Android SDK manager
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Install Android SDK pieces and NDK r21e
-        run: |
-          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-          if [ ! -x "$SDKMANAGER" ]; then SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/9.0/bin/sdkmanager"; fi
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" 'platform-tools' 'platforms;android-31' 'build-tools;31.0.0' 'ndk;21.4.7075529'
-
-      - name: Switch to JDK 11
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '11'
-
-      - name: Configure cached toolchain
-        run: |
-          haxelib setup "$HOME/haxelib"
-          haxelib set lime 8.3.2
-          haxelib set openfl 9.5.2
-          haxelib set hxcpp 4.3.2
-          haxelib set flixel 4.11.0
-          haxelib set flixel-addons 2.11.0
-          haxelib set flixel-ui 2.4.0
-          mkdir -p "$HOME/.hxcpp_cache"
-          cat > "$HOME/.hxcpp_config.xml" <<EOF
-          <?xml version="1.0" encoding="utf-8"?>
-          <xml>
-            <section id="vars">
-              <set name="HXCPP_COMPILE_CACHE" value="$HOME/.hxcpp_cache" />
-              <set name="HXCPP_CACHE_MB" value="6000" />
-              <set name="HXCPP_COMPILE_THREADS" value="4" />
-            </section>
-          </xml>
-          EOF
-          haxelib run lime config ANDROID_SDK "$ANDROID_SDK_ROOT"
-          haxelib run lime config ANDROID_NDK_ROOT "$ANDROID_SDK_ROOT/ndk/21.4.7075529"
-          haxelib run lime config JAVA_HOME "$JAVA_HOME"
-          haxelib run hxcpp cache list || true
-
-      - name: Build APK from warmed cache
-        run: haxelib run lime build android -debug -arm64
-
-      - name: Locate APK
-        run: find export -type f -name '*.apk' -print
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: PsychEngine-MobileEditor-M1-ARM64-cached
-          path: export/**/*.apk
-          if-no-files-found: error
+      - name: Retry moved to primary build workflow
+        run: echo "Automatic heavy retries are disabled. Use the single Android APK build workflow instead."
