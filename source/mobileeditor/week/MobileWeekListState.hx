@@ -52,8 +52,7 @@ class MobileWeekListState extends MusicBeatState
         add(back);
 
         var create = bigButton(204, 106, 260, 54, '+ CRIAR WEEK', function() {
-            WeekEditorState.weekFileName = 'nova-week';
-            MusicBeatState.switchState(new WeekEditorState());
+            MusicBeatState.switchState(new MobileWeekCreateState());
         });
         add(create);
 
@@ -116,8 +115,7 @@ class MobileWeekListState extends MusicBeatState
         if (weekIds.length == 0)
         {
             var empty = bigButton(70, 210, FlxG.width - 140, 70, 'Nenhuma week encontrada - toque em + CRIAR WEEK', function() {
-                WeekEditorState.weekFileName = 'nova-week';
-                MusicBeatState.switchState(new WeekEditorState());
+                MusicBeatState.switchState(new MobileWeekCreateState());
             });
             buttons.push(empty);
             add(empty);
