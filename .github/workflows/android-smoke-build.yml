@@ -12,12 +12,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: 15
     env:
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
       ANDROID_SETUP: 'true'
       HXCPP_COMPILE_THREADS: '4'
-      BUILD_TRIGGER: '15'
+      BUILD_TRIGGER: '16'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,12 +38,9 @@ jobs:
             psych-haxelib-v2-${{ runner.os }}-haxe425-flixel411-
 
       - name: Restore partial native build
-        id: native-cache
         uses: actions/cache/restore@v4
         with:
-          path: |
-            export/debug/android/obj
-            export/debug/android/haxe
+          path: export/debug/android
           key: psych-native-arm64-${{ runner.os }}-${{ github.run_number }}
           restore-keys: |
             psych-native-arm64-${{ runner.os }}-
@@ -100,17 +97,15 @@ jobs:
 
       - name: Build debug APK ARM64
         id: apk-build
-        timeout-minutes: 20
+        timeout-minutes: 8
         continue-on-error: true
         run: haxelib run lime build android -debug -arm64
 
-      - name: Save partial native build
+      - name: Save native progress
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: |
-            export/debug/android/obj
-            export/debug/android/haxe
+          path: export/debug/android
           key: psych-native-arm64-${{ runner.os }}-${{ github.run_number }}
 
       - name: Require successful APK build
