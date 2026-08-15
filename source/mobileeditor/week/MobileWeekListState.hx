@@ -22,7 +22,7 @@ import WeekData.WeekFile;
  */
 class MobileWeekListState extends MusicBeatState
 {
-    static inline var PAGE_SIZE:Int = 6;
+    static inline var ITEMS_PER_PAGE:Int = 6;
     var weekIds:Array<String> = [];
     var page:Int = 0;
     var buttons:Array<FlxButton> = [];
@@ -74,7 +74,7 @@ class MobileWeekListState extends MusicBeatState
         add(pageLabel);
 
         var next = bigButton(544, FlxG.height - 72, 180, 48, 'Pagina >', function() {
-            if ((page + 1) * PAGE_SIZE < weekIds.length) { page++; rebuildCards(); }
+            if ((page + 1) * ITEMS_PER_PAGE < weekIds.length) { page++; rebuildCards(); }
         });
         add(next);
 
@@ -84,7 +84,7 @@ class MobileWeekListState extends MusicBeatState
     function refreshWeeks():Void
     {
         weekIds = MobileAssetDiscovery.listWeeks();
-        var maxPage = weekIds.length == 0 ? 0 : Std.int((weekIds.length - 1) / PAGE_SIZE);
+        var maxPage = weekIds.length == 0 ? 0 : Std.int((weekIds.length - 1) / ITEMS_PER_PAGE);
         if (page > maxPage) page = maxPage;
         rebuildCards();
     }
@@ -97,8 +97,8 @@ class MobileWeekListState extends MusicBeatState
         }
         buttons = [];
 
-        var start = page * PAGE_SIZE;
-        var end = Std.int(Math.min(start + PAGE_SIZE, weekIds.length));
+        var start = page * ITEMS_PER_PAGE;
+        var end = Std.int(Math.min(start + ITEMS_PER_PAGE, weekIds.length));
         var y:Float = 182;
         for (i in start...end)
         {
@@ -124,7 +124,7 @@ class MobileWeekListState extends MusicBeatState
             buttons.push(empty);
             add(empty);
         }
-        pageLabel.text = 'Pagina ' + (page + 1) + ' / ' + Math.max(1, Math.ceil(weekIds.length / PAGE_SIZE));
+        pageLabel.text = 'Pagina ' + (page + 1) + ' / ' + Math.max(1, Math.ceil(weekIds.length / ITEMS_PER_PAGE));
     }
 
     function openWeek(id:String):Void
